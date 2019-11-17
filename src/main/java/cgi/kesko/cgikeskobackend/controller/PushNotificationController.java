@@ -49,23 +49,6 @@ public class PushNotificationController {
 
     @PostMapping("/notification")
     public ResponseEntity sendNotification() throws ClassNotFoundException, SQLException {
-        List<List<String>> records = new ArrayList<>();
-        try (CSVReader csvReader = new CSVReader(Files.newBufferedReader(Paths.get(
-                ClassLoader.getSystemResource("kesko/person1.csv").toURI())))) {
-            String[] values;
-            while ((values = csvReader.readNext()) != null) {
-                records.add(Arrays.asList(values));
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CsvValidationException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-
         Class.forName("com.mysql.cj.jdbc.Driver");
         Connection con= DriverManager.getConnection(
                 "jdbc:mysql://remotemysql.com:3306/ALchX2qIMc","ALchX2qIMc","aFKmpvtsJl");
