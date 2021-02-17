@@ -2,6 +2,7 @@ package cgi.kesko.cgikeskobackend.controller;
 
 
 import cgi.kesko.cgikeskobackend.model.PushNotificationRequest;
+import cgi.kesko.cgikeskobackend.model.NotificationUserRequest;
 import cgi.kesko.cgikeskobackend.model.PushNotificationResponse;
 import cgi.kesko.cgikeskobackend.service.PushNotificationService;
 import com.google.gson.JsonArray;
@@ -47,13 +48,32 @@ public class PushNotificationController {
         this.pushNotificationService = pushNotificationService;
     }
 
+    @PostMapping("/notification/user")
+    public ResponseEntity mapUserToken(@RequestBody NotificationUserRequest request) throws ClassNotFoundException, SQLException {
+        System.out.println(request.getToken() + "," + request.getCustomer());
+
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        Connection con= DriverManager.getConnection(
+                "jdbc:mysql://remotemysql.com:3306/ALchX2qIMc","ALchX2qIMc","aFKmpvtsJl");
+        Statement stmt=con.createStatement();
+        ResultSet rs=stmt.executeQuery("select * from UserTokens as ut where ut.customer = " + request.getCustomer());
+        if(!rs.next()){
+            stmt.execute("insert into UserTokens(customer, token)  values('" + request.getCustomer() + "','" + request.getToken() +"')");
+        }else{
+            stmt.execute("update UserTokens set token = '" + request.getToken() + "' where customer ='" + request.getCustomer() + "'" );
+        }
+        con.close();
+        return new ResponseEntity<>(new PushNotificationResponse(HttpStatus.OK.value(), "Data has been stored"), HttpStatus.OK);
+    }
+
+
     @PostMapping("/notification")
     public ResponseEntity sendNotification() throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.cj.jdbc.Driver");
         Connection con= DriverManager.getConnection(
                 "jdbc:mysql://remotemysql.com:3306/ALchX2qIMc","ALchX2qIMc","aFKmpvtsJl");
         Statement stmt=con.createStatement();
-        ResultSet rs=stmt.executeQuery("select * from Person where Person.expirey_date < DATE_ADD(NOW(), INTERVAL 2 DAY)");
+        ResultSet rs=stmt.executeQuery("select Person.expirey_date, products.name, products.image from Person JOIN products ON Person.EAN = products.ean where Person.expirey_date > NOW() and Person.expirey_date < DATE_ADD(NOW(), INTERVAL 2 DAY) and Person.KCustomer = 6715");
 
         Timestamp timestamp = new Timestamp(new Date().getTime());
         Timestamp expiryDate;
@@ -65,9 +85,9 @@ public class PushNotificationController {
 
             JsonObject jsonObject = new JsonObject();
 
-            jsonObject.addProperty("icon_link",rs.getString("product_icon_link"));
-            jsonObject.addProperty("product_name",rs.getString("product_name"));
-            jsonObject.addProperty("time_till_expiry",daysBetweenUsingJoda(timestamp, expiryDate));
+            jsonObject.addProperty("image",rs.getString("image"));
+            jsonObject.addProperty("name",rs.getString("name"));
+            jsonObject.addProperty("expirationDate",daysBetweenUsingJoda(timestamp, expiryDate));
 
             jsonArray.add(jsonObject);
 
